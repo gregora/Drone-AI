@@ -62,6 +62,7 @@ namespace nnlib {
 		Network(std::string name = "network");
 
 		void addLayer(Layer* l);
+		Layer* getLayer(uint index);
 
 		Matrix eval(const Matrix* input);
 

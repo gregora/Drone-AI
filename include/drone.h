@@ -20,7 +20,7 @@ class Drone : public sf::Transformable, public sf::Drawable {
 		float engine_dist = 0.2;
 		float engine_pow = 3;
 
-		Drone(const char * path = "img/drone.png");
+		Drone(const char * path, float load_texture = true);
 
 		void physics(float delta, bool debug = false);
 		void setPower(float left, float right);

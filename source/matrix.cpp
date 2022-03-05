@@ -86,8 +86,8 @@ namespace nnlib {
 
 	void Matrix::setName(std::string new_name) {
 		for (uint i = 0; i < new_name.length(); i++)
-			if (isspace(new_name[i]))
-				throw std::invalid_argument(new_name + " contains whitespace characters!");
+			//if (isspace(new_name[i]))
+			//	throw std::invalid_argument(new_name + " contains whitespace characters!");
 		this->name = new_name;
 	}
 

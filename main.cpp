@@ -2,13 +2,20 @@
 #include "include/drone.h"
 #include "include/misc.h"
 #include <stdio.h>
+#include <iostream>
+#include <limits>
 
-float * evaluate(int size, nnlib::Network ** networks, float time, float display = false);
 
-int POPULATION_SIZE = 100;
+float * evaluate(int size, nnlib::Network ** networks, float time, float sx, float sy, float display = true);
+float calculate_score(Drone* drone);
+int min(int size, float * arr);
+void sort_scores(int size, float* scores, nnlib::Network ** networks);
+
+int POPULATION_SIZE = 10;
+int SAMPLE_NUM = 10;
+
 int WIDTH = 1000;
 int HEIGHT = 500;
-
 float PPM = 10;
 
 int main(){
@@ -22,18 +29,55 @@ int main(){
 		networks[i] = network;
 	}
 
-	evaluate(POPULATION_SIZE, &networks[0], 20, true);
+	for(int i = 1; i <= 1000; i++){
+		//simulate generation
+		float avg_scores[POPULATION_SIZE];
+		for(int j = 0; j < POPULATION_SIZE; j++){
+			avg_scores[j] = 0;
+		}
+
+		printf("Generation %d\n", i);
+
+		//run simulation multiple times with multiple random positions
+		for(int j = 0; j < SAMPLE_NUM; j++){
+			float * scores = evaluate(POPULATION_SIZE, &networks[0], 20, j*9372 % 100 - 50, j*4383 % 50 - 25, (i % 20 == 0) && (j == 1));
+			for(int k = 0; k < POPULATION_SIZE; k++){
+				avg_scores[k] += scores[k];
+			}
+			delete[] scores;
+		}
+
+		int min_score = min(POPULATION_SIZE, &avg_scores[0]);
+		printf("Min score: %f\n", sqrt(avg_scores[min_score] / SAMPLE_NUM));
+
+		sort_scores(POPULATION_SIZE, avg_scores, networks);
+
+		//replace losers with new drones
+		for(int i = 0; i < (POPULATION_SIZE + 1) / 2; i++){
+			if(i + (POPULATION_SIZE + 1)/2 < POPULATION_SIZE){
+
+				delete networks[i+(POPULATION_SIZE + 1)/2];
+
+				networks[i+(POPULATION_SIZE + 1)/2] = networks[i] -> clone();
+				nnlib::Dense * layer1 = ((nnlib::Dense *)(networks[i] -> getLayer(0)));
+
+				for(int j = 0; j < 3; j++){
+					layer1 -> mutate(0, 1);
+				}
+			}
+		}
+
+	}
 }
 
 
 
-float * evaluate(int size, nnlib::Network ** networks, float time, float display){
-
+float * evaluate(int size, nnlib::Network ** networks, float time, float sx, float sy, float display){
 	sf::ContextSettings settings;
 	settings.antialiasingLevel = 8;
 
 	sf::RenderTexture* renderTexture = new sf::RenderTexture();
-	sf::RenderWindow* window;
+	sf::RenderWindow* window = nullptr;
 
 	if(display){
 		renderTexture->create(WIDTH, HEIGHT);
@@ -45,18 +89,17 @@ float * evaluate(int size, nnlib::Network ** networks, float time, float display
 
 
 	float* scores = (float *) calloc(size, sizeof(float));
-	Drone drones[size];
+	Drone* drones[size];
 
 	float elapsed = 0;
 	float delta = 1.0f / 60.0f;
 
-	int sx = nnlib::randomInt(-50, 50);
-	int sy = nnlib::randomInt(-25, 25);
 
 	//set initial position
 	for(int i = 0; i < size; i++){
-		drones[i].x = sx;
-		drones[i].y = sy;
+		drones[i] = new Drone("img/drone.png", display);
+		drones[i]->x = sx;
+		drones[i]->y = sy;
 	}
 
 
@@ -69,25 +112,25 @@ float * evaluate(int size, nnlib::Network ** networks, float time, float display
 
 		for(int i = 0; i < size; i++){
 			nnlib::Matrix input(1,6);
-			input.setValue(0, 0, drones[i].x);
-			input.setValue(0, 1, drones[i].y);
-			input.setValue(0, 2, drones[i].speedx);
-			input.setValue(0, 3, drones[i].speedy);
-			input.setValue(0, 4, drones[i].angle);
-			input.setValue(0, 5, drones[i].angular_velocity);
+			input.setValue(0, 0, drones[i]->x);
+			input.setValue(0, 1, drones[i]->y);
+			input.setValue(0, 2, drones[i]->speedx);
+			input.setValue(0, 3, drones[i]->speedy);
+			input.setValue(0, 4, drones[i]->angle);
+			input.setValue(0, 5, drones[i]->angular_velocity);
 
 			nnlib::Matrix output = networks[i] -> eval(&input);
 
 			float left = output.getValue(0, 0);
 			float right = output.getValue(0, 1);
 
-			drones[i].setPower(left, right);
-			drones[i].physics(delta, false);
+			drones[i]->setPower(left, right);
+			drones[i]->physics(delta, false);
 
 			if(display){
-				drones[i].setPosition(WIDTH/2 + drones[i].x*PPM, HEIGHT/2 - drones[i].y*PPM);
-				drones[i].setRotation(drones[i].angle * 180/3.14);
-				renderTexture -> draw(drones[i]);
+				drones[i]->setPosition(WIDTH/2 + drones[i]->x*PPM, HEIGHT/2 - drones[i]->y*PPM);
+				drones[i]->setRotation(drones[i]->angle * 180/3.14);
+				renderTexture -> draw(*drones[i]);
 			}
 
 		}
@@ -111,6 +154,60 @@ float * evaluate(int size, nnlib::Network ** networks, float time, float display
 		}
 	}
 
-	delete window;
+	for(int i = 0; i < size; i++){
+		scores[i] = calculate_score(drones[i]);
+	}
 
+	if(window != nullptr)
+		delete window;
+
+	return scores;
+}
+
+float calculate_score(Drone* drone){
+	float score = 0;
+	float x = drone -> x;
+	float y = drone -> y;
+	float speedx = drone -> speedx;
+	float speedy = drone -> speedy;
+	float angle = drone -> angle;
+	float angular_velocity = drone -> angular_velocity;
+
+	score = x*x + y*y;
+
+}
+
+int min(int size, float * arr){
+	float min_i = 0;
+	int index = -1;
+	for(int i = 0; i < size; i++){
+		if(i == 0){
+			min_i = arr[i];
+			index = 0;
+		}else{
+			if(min_i > arr[i]){
+				min_i = arr[i];
+				index = i;
+			}
+		}
+	}
+
+	return index;
+}
+
+void sort_scores(int size, float* scores, nnlib::Network ** networks){
+
+	for(int i = 0; i < size; i++){
+		int min_index = min(size - i, scores + i) + i;
+
+		//switch networks
+		float first_val = scores[i];
+		nnlib::Network* first_net = networks[i];
+
+		scores[i] = scores[min_index];
+		networks[i] = networks[min_index];
+
+		scores[min_index] = first_val;
+		networks[min_index] = first_net;
+	}
 }

@@ -1,7 +1,9 @@
 #include "../include/drone.h"
 
-Drone::Drone(const char * path) {
-	texture.loadFromFile(path);
+Drone::Drone(const char * path, float load_texture) {
+	if(load_texture){
+		texture.loadFromFile(path);
+	}
 
 	float scale = 0.1;
 

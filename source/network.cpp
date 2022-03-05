@@ -102,6 +102,10 @@ namespace nnlib {
 		layers.push_back(l);
 	}
 
+	Layer* Network::getLayer(uint index){
+		return layers[index];
+	}
+
 	Matrix Network::eval(const Matrix* input) {
 		Matrix values = dereference(input);
 
