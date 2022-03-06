@@ -32,6 +32,7 @@ namespace nnlib {
 
 		Dense(uint input, uint output, std::string name = "dense_layer");
 
+
 		std::string serialize();
 		void deserialize(std::string input);
 
@@ -41,14 +42,20 @@ namespace nnlib {
 
 		void setActivationFunction(float (*newActivationFunction)(float));
 
+		void randomize(float min, float max);
 		void mutate(float min, float max);
+		Dense * crossover(const Dense * b) const;
+		Dense * crossover_avg(const Dense * b) const;
 
 		~Dense();
 
-	private:
+		int inputSize() const;
+		int outputSize() const;
+
 		Matrix* weights;
 		Matrix* biases;
 
+	private:
 		float (*activationFunction)(float) = &fast_sigmoid;
 
 	};
@@ -63,6 +70,7 @@ namespace nnlib {
 
 		void addLayer(Layer* l);
 		Layer* getLayer(uint index);
+		int getLayerNumber();
 
 		Matrix eval(const Matrix* input);
 
