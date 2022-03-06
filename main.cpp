@@ -12,7 +12,7 @@ float calculate_score(Drone* drone);
 int min(int size, float * arr);
 void sort_scores(int size, float* scores, nnlib::Network ** networks);
 
-int POPULATION_SIZE = 100;
+int POPULATION_SIZE = 1000;
 int SAMPLE_NUM = 5;
 int MUTATIONS = 2;
 
@@ -26,9 +26,13 @@ int main(){
 
 	for(int i = 0; i < POPULATION_SIZE; i++){
 		nnlib::Network * network = new nnlib::Network();
-		nnlib::Dense * layer1 = new nnlib::Dense(6, 2);
-		layer1 -> randomize(-1, 1);
+		nnlib::Dense * layer1 = new nnlib::Dense(6, 4);
+		layer1 -> randomize(0, 0);
+		nnlib::Dense * layer2 = new nnlib::Dense(4, 2);
+		layer1 -> randomize(0, 0);
+
 		network -> addLayer(layer1);
+		network -> addLayer(layer2);
 		networks[i] = network;
 	}
 
@@ -43,7 +47,7 @@ int main(){
 
 		//run simulation multiple times with multiple random positions
 		for(int j = 0; j < SAMPLE_NUM; j++){
-			float * scores = evaluate(POPULATION_SIZE, &networks[0], 20, j*9372 % 100 - 50, j*4383 % 50 - 25, (i%10 == 0) && (j == 0));
+			float * scores = evaluate(POPULATION_SIZE, &networks[0], 20, j*9372 % 100 - 50, j*4383 % 50 - 25, (i%1 == 0) && (j == 1));
 			for(int k = 0; k < POPULATION_SIZE; k++){
 				avg_scores[k] += scores[k];
 			}
@@ -68,13 +72,23 @@ int main(){
 				delete networks[i+half_population];
 
 				networks[i+half_population] = new nnlib::Network();
-				nnlib::Dense * layer1 = ((nnlib::Dense *)(networks[nnlib::randomInt(0, half_population - 1)] -> getLayer(0)));
-				nnlib::Dense * layer2 = ((nnlib::Dense *)(networks[nnlib::randomInt(0, half_population - 1)] -> getLayer(0)));
 
-				networks[i+half_population] -> addLayer(layer1 -> crossover(layer2));
+				int parent1 = nnlib::randomInt(0, half_population - 1);
+				int parent2 = nnlib::randomInt(0, half_population - 1);
+
+				nnlib::Dense * layer1_1 = ((nnlib::Dense *)(networks[parent1] -> getLayer(0)));
+				nnlib::Dense * layer1_2 = ((nnlib::Dense *)(networks[parent2] -> getLayer(0)));
+
+				nnlib::Dense * layer2_1 = ((nnlib::Dense *)(networks[parent1] -> getLayer(1)));
+				nnlib::Dense * layer2_2 = ((nnlib::Dense *)(networks[parent2] -> getLayer(1)));
+
+
+				networks[i+half_population] -> addLayer(layer1_1 -> crossover(layer1_2));
+				networks[i+half_population] -> addLayer(layer2_1 -> crossover(layer2_2));
 
 				for(int j = 0; j < MUTATIONS; j++){
 					((nnlib::Dense*)(networks[i+half_population] -> getLayer(0))) -> mutate(-1, 1);
+					((nnlib::Dense*)(networks[i+half_population] -> getLayer(1))) -> mutate(-1, 1);
 				}
 
 			}
@@ -186,7 +200,7 @@ float calculate_score(Drone* drone){
 	float angle = drone -> angle;
 	float angular_velocity = drone -> angular_velocity;
 
-	score = x*x + y*y;
+	score = y*y;
 }
 
 int min(int size, float * arr){
