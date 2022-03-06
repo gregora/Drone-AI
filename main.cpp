@@ -183,7 +183,9 @@ float * evaluate(int size, nnlib::Network ** networks, float time, float sx, flo
 
 	for(int i = 0; i < size; i++){
 		scores[i] = calculate_score(drones[i]);
+		delete drones[i];
 	}
+
 
 	if(window != nullptr)
 		delete window;
@@ -200,7 +202,7 @@ float calculate_score(Drone* drone){
 	float angle = drone -> angle;
 	float angular_velocity = drone -> angular_velocity;
 
-	score = y*y;
+	score = y*y +x*x;
 }
 
 int min(int size, float * arr){
