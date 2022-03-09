@@ -12,7 +12,7 @@
 #include <ctime>
 
 
-void evaluate(int size, nnlib::Network ** networks, float * scores, float time, float sx, float sy, float display = true);
+void evaluate(int size, nnlib::Network ** networks, float * scores, float time, float sx, float sy, bool display = true, bool record = false);
 float calculate_score(Drone* drone);
 int min(int size, float * arr);
 void sort_scores(int size, float* scores, nnlib::Network ** networks);
@@ -26,6 +26,8 @@ int MAX_GEN = 1000;
 bool MULTITHREADING = false;
 
 bool DISPLAY = false;
+bool RECORD = false;
+bool SHOW_BEST = false;
 
 int WIDTH = 1000;
 int HEIGHT = 500;
@@ -49,6 +51,12 @@ int main(int argsn, char** args){
 		}else if(strcmp(args[i], "-display") == 0){
 			//turn on display
 			DISPLAY = true;
+		}else if(strcmp(args[i], "-record") == 0){
+			//record
+			RECORD = true;
+		}else if(strcmp(args[i], "-showbest") == 0){
+			//show only the best drone
+			SHOW_BEST = true;
 		}else if(strcmp(args[i], "-multithreading") == 0){
 			MULTITHREADING = true;
 		}else if(strcmp(args[i], "-load") == 0){
@@ -99,14 +107,20 @@ int main(int argsn, char** args){
 			float * scores = new float[POPULATION_SIZE];
 			all_scores[j] = scores;
 
-			if(MULTITHREADING){
-				threads.push_back(std::thread(evaluate, POPULATION_SIZE, &networks[0], scores, 20, j*9372 % 100 - 50, j*4383 % 50 - 25, (i%1 == 0) && (j == 1) && DISPLAY));
+			if(!DISPLAY){
+				if(MULTITHREADING){
+					threads.push_back(std::thread(evaluate, POPULATION_SIZE, &networks[0], scores, 20, j*9372 % 100 - 50, j*4383 % 50 - 25, false, false));
+				}else{
+					evaluate(POPULATION_SIZE, &networks[0], scores, 20, j*9372 % 100 - 50, j*4383 % 50 - 25, false, false);
+				}
 			}else{
-				evaluate(POPULATION_SIZE, &networks[0], scores, 20, j*9372 % 100 - 50, j*4383 % 50 - 25, (i%1 == 0) && (j == 1) && DISPLAY);
+				evaluate(POPULATION_SIZE, &networks[0], scores, 20, nnlib::randomInt(-50, 50), nnlib::randomInt(-25, 25), true, RECORD);
+				return 0;
 			}
 
 		}
 
+		//join threads
 		for(int j = 0; j < SAMPLE_NUM; j++){
 			if(MULTITHREADING){
 				threads[j].join();
@@ -118,11 +132,14 @@ int main(int argsn, char** args){
 			delete[] all_scores[j];
 		}
 
+		//find the best performer
 		int min_score = min(POPULATION_SIZE, &avg_scores[0]);
 		printf("Min score: %f\n", sqrt(avg_scores[min_score] / SAMPLE_NUM));
 
+		//sort scores in order
 		sort_scores(POPULATION_SIZE, avg_scores, networks);
 
+		//save networks
 		for(int j = 0; j < POPULATION_SIZE; j++){
 			networks[j] -> save("saves/generation"+std::to_string(i)+"/"+std::to_string(j)+".AI");
 		}
@@ -133,10 +150,13 @@ int main(int argsn, char** args){
 		for(int i = 0; i < half_population; i++){
 			if(i + half_population < POPULATION_SIZE){
 
+				//delete network
 				delete networks[i+half_population];
 
+				//create a child
 				networks[i+half_population] = new nnlib::Network();
 
+				//choose random parents
 				int parent1 = nnlib::randomInt(0, half_population - 1);
 				int parent2 = nnlib::randomInt(0, half_population - 1);
 
@@ -146,10 +166,10 @@ int main(int argsn, char** args){
 				nnlib::Dense * layer2_1 = ((nnlib::Dense *)(networks[parent1] -> getLayer(1)));
 				nnlib::Dense * layer2_2 = ((nnlib::Dense *)(networks[parent2] -> getLayer(1)));
 
-
 				networks[i+half_population] -> addLayer(layer1_1 -> crossover(layer1_2));
 				networks[i+half_population] -> addLayer(layer2_1 -> crossover(layer2_2));
 
+				//mutate child
 				for(int j = 0; j < MUTATIONS; j++){
 					((nnlib::Dense*)(networks[i+half_population] -> getLayer(0))) -> mutate(-1, 1);
 					((nnlib::Dense*)(networks[i+half_population] -> getLayer(1))) -> mutate(-1, 1);
@@ -165,7 +185,7 @@ int main(int argsn, char** args){
 
 
 
-void evaluate(int size, nnlib::Network ** networks, float * scores, float time, float sx, float sy, float display){
+void evaluate(int size, nnlib::Network ** networks, float * scores, float time, float sx, float sy, bool display, bool record){
 	sf::ContextSettings settings;
 	settings.antialiasingLevel = 8;
 
@@ -182,25 +202,29 @@ void evaluate(int size, nnlib::Network ** networks, float * scores, float time, 
 
 	Drone* drones[size];
 
-	float elapsed = 0;
-	float delta = 1.0f / 60.0f;
-
-
-	//set initial position
+	//set initial positions
 	for(int i = 0; i < size; i++){
 		drones[i] = new Drone("img/drone.png", display);
+		drones[i]->setColor(255*i/size, 255*i/size, 255*i/size);
 		drones[i]->x = sx;
 		drones[i]->y = sy;
 	}
 
 
+	//main physics + rendering loop
+	int frame = -1;
+	float elapsed = 0;
+	float delta = 1.0f / 60.0f;
+
 	while(elapsed < time){
+		frame++;
 		elapsed += delta;
 
 		if(display){
 			renderTexture -> clear();
 		}
 
+		//apply network + physics + drawing for each drone
 		for(int i = 0; i < size; i++){
 			nnlib::Matrix input(1,6);
 			input.setValue(0, 0, drones[i]->x);
@@ -221,11 +245,15 @@ void evaluate(int size, nnlib::Network ** networks, float * scores, float time, 
 			if(display){
 				drones[i]->setPosition(WIDTH/2 + drones[i]->x*PPM, HEIGHT/2 - drones[i]->y*PPM);
 				drones[i]->setRotation(drones[i]->angle * 180/3.14);
-				renderTexture -> draw(*drones[i]);
+
+				if(!SHOW_BEST || (i == 0)){
+					renderTexture -> draw(*drones[i]);
+				}
 			}
 
 		}
 
+		//display
 		if(display){
 			renderTexture -> display();
 			sf::Texture screen_texture = renderTexture -> getTexture();
@@ -242,6 +270,12 @@ void evaluate(int size, nnlib::Network ** networks, float * scores, float time, 
 					exit(1);
 				}
 			}
+		}
+
+		//save frame to file
+		if(display && record){
+			renderTexture -> getTexture().copyToImage().saveToFile("frames/" + std::to_string(frame) + ".png");
+			printf("Frame %d rendered!\n", frame);
 		}
 	}
 

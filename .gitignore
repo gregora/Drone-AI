@@ -32,3 +32,5 @@
 *.app
 
 saves/*
+frames/*.png
+frames/*.mp4
