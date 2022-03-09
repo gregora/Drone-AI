@@ -6,7 +6,7 @@ NC='\033[0m' # No Color
 
 echo "Compiling ..."
 
-if g++ source/drone.cpp source/matrix.cpp source/network.cpp source/misc.cpp main.cpp -o main.out -lsfml-graphics -lsfml-window -lsfml-system; then
+if g++ source/drone.cpp source/matrix.cpp source/network.cpp source/misc.cpp main.cpp -o main.out -lsfml-graphics -lsfml-window -lsfml-system -lpthread; then
 	echo -e -n "${GREEN}"
 	echo "Compilation successful"
 	echo -e -n "${NC}"

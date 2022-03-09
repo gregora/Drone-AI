@@ -5,38 +5,82 @@
 #include <iostream>
 #include <limits>
 #include <chrono>
+#include <string.h>
+#include <string>
+#include <thread>
+#include <vector>
 
 
-float * evaluate(int size, nnlib::Network ** networks, float time, float sx, float sy, float display = true);
+void evaluate(int size, nnlib::Network ** networks, float * scores, float time, float sx, float sy, float display = true);
 float calculate_score(Drone* drone);
 int min(int size, float * arr);
 void sort_scores(int size, float* scores, nnlib::Network ** networks);
 
+//default values
 int POPULATION_SIZE = 1000;
 int SAMPLE_NUM = 5;
 int MUTATIONS = 2;
+int MAX_GEN = 1000;
+
+bool MULTITHREADING = false;
+
+bool DISPLAY = false;
 
 int WIDTH = 1000;
 int HEIGHT = 500;
 float PPM = 10;
 
-int main(){
+int main(int argsn, char** args){
 	//initial creation of networks
 	nnlib::Network * networks[POPULATION_SIZE];
 
+	char* load = nullptr;
+
+	for(int i = 0; i < argsn; i++){
+		if(strcmp(args[i], "-population") == 0){
+			POPULATION_SIZE = atol(args[i + 1]);
+		}else if(strcmp(args[i], "-samples") == 0){
+			SAMPLE_NUM = atol(args[i + 1]);
+		}else if(strcmp(args[i], "-mutations") == 0){
+			MUTATIONS = atol(args[i + 1]);
+		}else if(strcmp(args[i], "-max") == 0){
+			MAX_GEN = atol(args[i + 1]);
+		}else if(strcmp(args[i], "-display") == 0){
+			//turn on display
+			DISPLAY = true;
+		}else if(strcmp(args[i], "-multithreading") == 0){
+			MULTITHREADING = true;
+		}else if(strcmp(args[i], "-load") == 0){
+			load = args[i + 1];
+		}
+	}
+
 	for(int i = 0; i < POPULATION_SIZE; i++){
 		nnlib::Network * network = new nnlib::Network();
-		nnlib::Dense * layer1 = new nnlib::Dense(6, 4);
-		layer1 -> randomize(0, 0);
-		nnlib::Dense * layer2 = new nnlib::Dense(4, 2);
-		layer1 -> randomize(0, 0);
 
-		network -> addLayer(layer1);
-		network -> addLayer(layer2);
+		if(load == nullptr){
+			nnlib::Dense * layer1 = new nnlib::Dense(6, 4);
+			layer1 -> randomize(0, 0);
+			nnlib::Dense * layer2 = new nnlib::Dense(4, 2);
+			layer1 -> randomize(0, 0);
+
+			network -> addLayer(layer1);
+			network -> addLayer(layer2);
+		}else{
+			std::string path = "saves/generation";
+			std::string generation(load);
+			network -> load(path + generation + "/" + std::to_string(i) + ".AI");
+		}
+
 		networks[i] = network;
 	}
 
-	for(int i = 1; i <= 1000; i++){
+	int first_gen = 1;
+	if(load != nullptr){
+		first_gen = atoi(load);
+	}
+
+	for(int i = first_gen; i <= 1000; i++){
 		//simulate generation
 		float avg_scores[POPULATION_SIZE];
 		for(int j = 0; j < POPULATION_SIZE; j++){
@@ -45,13 +89,28 @@ int main(){
 
 		printf("Generation %d\n", i);
 
+		std::vector<std::thread> threads;
+		float * all_scores[SAMPLE_NUM];
+
 		//run simulation multiple times with multiple random positions
 		for(int j = 0; j < SAMPLE_NUM; j++){
-			float * scores = evaluate(POPULATION_SIZE, &networks[0], 20, j*9372 % 100 - 50, j*4383 % 50 - 25, (i%1 == 0) && (j == 1));
-			for(int k = 0; k < POPULATION_SIZE; k++){
-				avg_scores[k] += scores[k];
+			float * scores = new float[POPULATION_SIZE];
+			all_scores[j] = scores;
+
+			if(MULTITHREADING){
+				threads.push_back(std::thread(evaluate, POPULATION_SIZE, &networks[0], scores, 20, j*9372 % 100 - 50, j*4383 % 50 - 25, (i%1 == 0) && (j == 1) && DISPLAY));
+			}else{
+				evaluate(POPULATION_SIZE, &networks[0], scores, 20, j*9372 % 100 - 50, j*4383 % 50 - 25, (i%1 == 0) && (j == 1) && DISPLAY);
 			}
-			delete[] scores;
+
+		}
+
+		for(int j = 0; j < SAMPLE_NUM; j++){
+			threads[j].join();
+			for(int k = 0; k < POPULATION_SIZE; k++){
+				avg_scores[k] += all_scores[j][k];
+			}
+			delete[] all_scores[j];
 		}
 
 		int min_score = min(POPULATION_SIZE, &avg_scores[0]);
@@ -99,7 +158,7 @@ int main(){
 
 
 
-float * evaluate(int size, nnlib::Network ** networks, float time, float sx, float sy, float display){
+void evaluate(int size, nnlib::Network ** networks, float * scores, float time, float sx, float sy, float display){
 	sf::ContextSettings settings;
 	settings.antialiasingLevel = 8;
 
@@ -114,8 +173,6 @@ float * evaluate(int size, nnlib::Network ** networks, float time, float sx, flo
 	}
 
 
-
-	float* scores = (float *) calloc(size, sizeof(float));
 	Drone* drones[size];
 
 	float elapsed = 0;
@@ -190,7 +247,6 @@ float * evaluate(int size, nnlib::Network ** networks, float time, float sx, flo
 	if(window != nullptr)
 		delete window;
 
-	return scores;
 }
 
 float calculate_score(Drone* drone){

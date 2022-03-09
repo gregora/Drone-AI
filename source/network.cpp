@@ -259,7 +259,6 @@ namespace nnlib {
 		std::stringstream buffer;
 		buffer << file.rdbuf(); //read the file
 		std::string string = buffer.str(); //str holds the content of the file
-
 		deserialize(string);
 	}
 
