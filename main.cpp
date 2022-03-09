@@ -300,6 +300,7 @@ float calculate_score(Drone* drone){
 	float angular_velocity = drone -> angular_velocity;
 
 	score = y*y +x*x;
+	return score;
 }
 
 int min(int size, float * arr){
