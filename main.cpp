@@ -201,10 +201,13 @@ void evaluate(int size, nnlib::Network ** networks, float * scores, float time, 
 
 	sf::Texture centre_t;
 	sf::Sprite centre;
-	centre_t.loadFromFile("img/target.png");
-	centre.setTexture(centre_t);
-	centre.setOrigin(10, 10);
-	centre.setPosition(WIDTH/2, HEIGHT/2);
+
+	if(DISPLAY){
+		centre_t.loadFromFile("img/target.png");
+		centre.setTexture(centre_t);
+		centre.setOrigin(10, 10);
+		centre.setPosition(WIDTH/2, HEIGHT/2);
+	}
 
 	Drone* drones[size];
 
@@ -232,7 +235,7 @@ void evaluate(int size, nnlib::Network ** networks, float * scores, float time, 
 		}
 
 		//apply network + physics + drawing for each drone
-		for(int i = 0; i < size; i++){
+		for(int i = size - 1; i >= 0; i--){
 			nnlib::Matrix input(1,6);
 			input.setValue(0, 0, drones[i]->x);
 			input.setValue(0, 1, drones[i]->y);
@@ -252,6 +255,10 @@ void evaluate(int size, nnlib::Network ** networks, float * scores, float time, 
 			if(display){
 				drones[i]->setPosition(WIDTH/2 + drones[i]->x*PPM, HEIGHT/2 - drones[i]->y*PPM);
 				drones[i]->setRotation(drones[i]->angle * 180/3.14);
+
+				if(i != 0){
+					drones[i] -> setOpacity(50);
+				}
 
 				if(!SHOW_BEST || (i == 0)){
 					renderTexture -> draw(*drones[i]);

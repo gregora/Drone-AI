@@ -28,6 +28,7 @@ class Drone : public sf::Transformable, public sf::Drawable {
 		void physics(float delta, bool debug = false);
 		void setPower(float left, float right);
 		void setColor(int red, int green, int blue);
+		void setOpacity(int value);
 
 		virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const;
 

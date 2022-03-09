@@ -59,6 +59,13 @@ void Drone::setColor(int red, int green, int blue){
 	square.setFillColor(sf::Color(red, green, blue));
 }
 
+void Drone::setOpacity(int value){
+	sprite.setColor(sf::Color(255, 255, 255, value));
+	sf::Color sq = square.getFillColor();
+	sq.a = value;
+	square.setFillColor(sq);
+}
+
 
 void Drone::draw(sf::RenderTarget& target, sf::RenderStates states) const {
 
