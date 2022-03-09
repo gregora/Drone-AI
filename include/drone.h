@@ -20,6 +20,9 @@ class Drone : public sf::Transformable, public sf::Drawable {
 		float engine_dist = 0.2;
 		float engine_pow = 3;
 
+		float left_power = 0;
+		float right_power = 0;
+
 		Drone(const char * path, float load_texture = true);
 
 		void physics(float delta, bool debug = false);
@@ -33,6 +36,4 @@ class Drone : public sf::Transformable, public sf::Drawable {
 		sf::Texture texture;
 		sf::RectangleShape square;
 
-		float left_power = 0;
-		float right_power = 0;
 };

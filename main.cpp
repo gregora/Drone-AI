@@ -199,6 +199,12 @@ void evaluate(int size, nnlib::Network ** networks, float * scores, float time, 
 		window->display();
 	}
 
+	sf::Texture centre_t;
+	sf::Sprite centre;
+	centre_t.loadFromFile("img/target.png");
+	centre.setTexture(centre_t);
+	centre.setOrigin(10, 10);
+	centre.setPosition(WIDTH/2, HEIGHT/2);
 
 	Drone* drones[size];
 
@@ -222,6 +228,7 @@ void evaluate(int size, nnlib::Network ** networks, float * scores, float time, 
 
 		if(display){
 			renderTexture -> clear();
+			renderTexture -> draw(centre);
 		}
 
 		//apply network + physics + drawing for each drone
@@ -251,6 +258,36 @@ void evaluate(int size, nnlib::Network ** networks, float * scores, float time, 
 				}
 			}
 
+		}
+
+		if(SHOW_BEST && display){
+
+			int h1 = ((float) 120)*(drones[0] -> left_power);
+			int h2 = ((float) 120)*(drones[0] -> right_power);
+
+			sf::RectangleShape power1(sf::Vector2f(40, 120));
+			sf::RectangleShape power2(sf::Vector2f(40, 120));
+
+			power1.setPosition(WIDTH - 60, HEIGHT - 20 - 120);
+			power2.setPosition(WIDTH - 120, HEIGHT - 20 - 120);
+
+			power1.setFillColor(sf::Color(50, 50, 50));
+			power2.setFillColor(sf::Color(50, 50, 50));
+
+			renderTexture -> draw(power1);
+			renderTexture -> draw(power2);
+
+			power1.setSize(sf::Vector2f(40, h1));
+			power2.setSize(sf::Vector2f(40, h2));
+
+			power1.setFillColor(sf::Color(255, 255, 255));
+			power2.setFillColor(sf::Color(255, 255, 255));
+
+			power1.setPosition(WIDTH - 60, HEIGHT - 20 - h1);
+			power2.setPosition(WIDTH - 120, HEIGHT - 20 - h2);
+
+			renderTexture -> draw(power1);
+			renderTexture -> draw(power2);
 		}
 
 		//display
