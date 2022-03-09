@@ -9,6 +9,7 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <ctime>
 
 
 void evaluate(int size, nnlib::Network ** networks, float * scores, float time, float sx, float sy, float display = true);
@@ -87,7 +88,8 @@ int main(int argsn, char** args){
 			avg_scores[j] = 0;
 		}
 
-		printf("Generation %d\n", i);
+		printf("\nGENERATION %d\n", i);
+		time_t start = time(0);
 
 		std::vector<std::thread> threads;
 		float * all_scores[SAMPLE_NUM];
@@ -106,7 +108,10 @@ int main(int argsn, char** args){
 		}
 
 		for(int j = 0; j < SAMPLE_NUM; j++){
-			threads[j].join();
+			if(MULTITHREADING){
+				threads[j].join();
+			}
+
 			for(int k = 0; k < POPULATION_SIZE; k++){
 				avg_scores[k] += all_scores[j][k];
 			}
@@ -153,6 +158,8 @@ int main(int argsn, char** args){
 			}
 		}
 
+		time_t end = time(0);
+		printf("Computation done in %ld s\n", end - start);
 	}
 }
 
