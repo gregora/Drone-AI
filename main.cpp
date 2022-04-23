@@ -22,12 +22,13 @@ int POPULATION_SIZE = 1000;
 int SAMPLE_NUM = 5;
 int MUTATIONS = 2;
 int MAX_GEN = 1000;
+float TIME = 20;
 
 bool MULTITHREADING = false;
 
 bool DISPLAY = false;
 bool RECORD = false;
-bool SHOW_BEST = false;
+bool SHOW_CTR = false;
 
 int WIDTH = 1000;
 int HEIGHT = 500;
@@ -48,19 +49,25 @@ int main(int argsn, char** args){
 			MUTATIONS = atol(args[i + 1]);
 		}else if(strcmp(args[i], "-max") == 0){
 			MAX_GEN = atol(args[i + 1]);
+		}else if(strcmp(args[i], "-time") == 0){
+			TIME = atol(args[i + 1]);
 		}else if(strcmp(args[i], "-display") == 0){
 			//turn on display
 			DISPLAY = true;
 		}else if(strcmp(args[i], "-record") == 0){
 			//record
 			RECORD = true;
-		}else if(strcmp(args[i], "-showbest") == 0){
-			//show only the best drone
-			SHOW_BEST = true;
+		}else if(strcmp(args[i], "-showctr") == 0){
+			//show controls
+			SHOW_CTR = true;
 		}else if(strcmp(args[i], "-multithreading") == 0){
 			MULTITHREADING = true;
 		}else if(strcmp(args[i], "-load") == 0){
 			load = args[i + 1];
+		}else if(strcmp(args[i], "-width") == 0){
+			WIDTH = atol(args[i + 1]);
+		}else if(strcmp(args[i], "-height") == 0){
+			HEIGHT = atol(args[i + 1]);
 		}
 	}
 
@@ -109,12 +116,12 @@ int main(int argsn, char** args){
 
 			if(!DISPLAY){
 				if(MULTITHREADING){
-					threads.push_back(std::thread(evaluate, POPULATION_SIZE, &networks[0], scores, 20, j*9372 % 100 - 50, j*4383 % 50 - 25, false, false));
+					threads.push_back(std::thread(evaluate, POPULATION_SIZE, &networks[0], scores, TIME, j*9372 % 100 - 50, j*4383 % 50 - 25, false, false));
 				}else{
-					evaluate(POPULATION_SIZE, &networks[0], scores, 20, j*9372 % 100 - 50, j*4383 % 50 - 25, false, false);
+					evaluate(POPULATION_SIZE, &networks[0], scores, TIME, j*9372 % 100 - 50, j*4383 % 50 - 25, false, false);
 				}
 			}else{
-				evaluate(POPULATION_SIZE, &networks[0], scores, 20, nnlib::randomInt(-50, 50), nnlib::randomInt(-25, 25), true, RECORD);
+				evaluate(POPULATION_SIZE, &networks[0], scores, TIME, nnlib::randomInt(-50, 50), nnlib::randomInt(-25, 25), true, RECORD);
 				return 0;
 			}
 
@@ -187,7 +194,7 @@ int main(int argsn, char** args){
 
 void evaluate(int size, nnlib::Network ** networks, float * scores, float time, float sx, float sy, bool display, bool record){
 	sf::ContextSettings settings;
-	settings.antialiasingLevel = 8;
+	settings.antialiasingLevel = 4;
 
 	sf::RenderTexture* renderTexture = new sf::RenderTexture();
 	sf::RenderWindow* window = nullptr;
@@ -197,6 +204,7 @@ void evaluate(int size, nnlib::Network ** networks, float * scores, float time, 
 		window = new sf::RenderWindow(sf::VideoMode(WIDTH, HEIGHT), "Drones", sf::Style::Default, settings);
 		window->clear();
 		window->display();
+		window->setVerticalSyncEnabled(true);
 	}
 
 	sf::Texture centre_t;
@@ -260,14 +268,13 @@ void evaluate(int size, nnlib::Network ** networks, float * scores, float time, 
 					drones[i] -> setOpacity(50);
 				}
 
-				if(!SHOW_BEST || (i == 0)){
-					renderTexture -> draw(*drones[i]);
-				}
+				renderTexture -> draw(*drones[i]);
+
 			}
 
 		}
 
-		if(SHOW_BEST && display){
+		if(SHOW_CTR && display){
 
 			int h1 = ((float) 120)*(drones[0] -> left_power);
 			int h2 = ((float) 120)*(drones[0] -> right_power);
