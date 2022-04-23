@@ -1,6 +1,8 @@
 # Drone-AI
 
-A project for teaching a neural network to control a drone using genetic algorithms.
+A project for teaching a neural network to control a drone using genetic algorithm.
+
+[https://youtu.be/l1SYa1WjSYQ](https://youtu.be/l1SYa1WjSYQ)
 
 ## Dependencies
 * [Drone interface](https://github.com/gregora/Drone) (included)
@@ -13,7 +15,9 @@ A project for teaching a neural network to control a drone using genetic algorit
 You can simply run `compile.sh` file. Compiling with this method also runs the binary.
 
 ## Running
-Binary also accepts these command line arguments:
+**Before running make sure that `/saves/[generation number]/` folders exist**
+
+Binary accepts these command line arguments:
 
 * Learning algorithm
 	* `-population [size]` - specify population size (*default: 1000*)  
