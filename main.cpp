@@ -225,6 +225,8 @@ void evaluate(int size, nnlib::Network ** networks, float * scores, float time, 
 		drones[i]->setColor(255*i/size, 255*i/size, 255*i/size);
 		drones[i]->x = sx;
 		drones[i]->y = sy;
+
+		scores[i] = 0;
 	}
 
 
@@ -259,6 +261,21 @@ void evaluate(int size, nnlib::Network ** networks, float * scores, float time, 
 
 			drones[i]->setPower(left, right);
 			drones[i]->physics(delta, false);
+
+
+			//check if drone is within finish limits
+			float dx = drones[i]->x;
+			float dy = drones[i]->y;
+			float dsx = drones[i]->speedx;
+			float dsy = drones[i]->speedy;
+
+			if(scores[i] == 0){
+				if(dx*dx + dy*dy < 4){
+					if(dsx*dsx + dsy*dsy < 1){
+						scores[i] = elapsed;
+					}
+				}
+			}
 
 			if(display){
 				drones[i]->setPosition(WIDTH/2 + drones[i]->x*PPM, HEIGHT/2 - drones[i]->y*PPM);
@@ -330,8 +347,12 @@ void evaluate(int size, nnlib::Network ** networks, float * scores, float time, 
 		}
 	}
 
+	//calculate score
 	for(int i = 0; i < size; i++){
-		scores[i] = calculate_score(drones[i]);
+		if(scores[i] == 0){
+			scores[i] += 21;
+		}
+		scores[i] += calculate_score(drones[i]);
 		delete drones[i];
 	}
 
@@ -350,7 +371,7 @@ float calculate_score(Drone* drone){
 	float angle = drone -> angle;
 	float angular_velocity = drone -> angular_velocity;
 
-	score = y*y +x*x;
+	score = y*y + x*x + abs(angular_velocity) + abs(angle);
 	return score;
 }
 
