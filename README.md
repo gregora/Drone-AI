@@ -2,7 +2,12 @@
 
 A project for teaching a neural network to control a drone using genetic algorithm.
 
-[https://youtu.be/l1SYa1WjSYQ](https://youtu.be/l1SYa1WjSYQ)
+## Results
+Great results were achieved after only 400 generations.
+
+https://github.com/gregora/Drone-AI/assets/26600857/c0e435fd-adde-4d00-8164-25889f45468b
+
+This is the accompanying Youtube video: [https://youtu.be/l1SYa1WjSYQ](https://youtu.be/l1SYa1WjSYQ)
 
 ## Dependencies
 * [Drone interface](https://github.com/gregora/Drone) (included)
